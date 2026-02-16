@@ -1,5 +1,3 @@
-memory_store.py
-
 import json
 import os
 from datetime import datetime
@@ -13,9 +11,9 @@ MAX_MEMORIES = 500  # 内部的なメモリ保持上限
 
 
 class MemoryStore:
-    def init(self, path: str = DATAPATH, maxmemories: int = MAX_MEMORIES):
+    def __init__(self, path: str = DATA_PATH, max_memories: int = MAX_MEMORIES):
         self.path = path
-        self.maxmemories = maxmemories
+        self.max_memories = max_memories
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         self.memories: List[Dict[str, Any]] = self._load()
 
@@ -31,7 +29,7 @@ class MemoryStore:
                 memories.append(json.loads(line))
         return memories
 
-    def saveall(self) -> None:
+    def save_all(self) -> None:
         with open(self.path, "w", encoding="utf-8") as f:
             for m in self.memories:
                 f.write(json.dumps(m, ensure_ascii=False) + "\n")
@@ -51,34 +49,34 @@ class MemoryStore:
         if len(self.memories) > self.max_memories:
             self.memories = self.memories[-self.max_memories :]
 
-        self.saveall()
+        self.save_all()
 
     def list_memories(self) -> List[Dict[str, Any]]:
         return list(self.memories)
 
 
 class SearchEngine:
-    def init(self, store: MemoryStore):
+    def __init__(self, store: MemoryStore):
         self.store = store
         self.vectorizer = TfidfVectorizer()
-        self.fitvectorizer()
+        self.fit_vectorizer()
 
-    def fitvectorizer(self) -> None:
+    def fit_vectorizer(self) -> None:
         texts = [m["text"] for m in self.store.memories]
         if not texts:
             self.tfidf_matrix = None
             return
-        self.tfidfmatrix = self.vectorizer.fittransform(texts)
+        self.tfidf_matrix = self.vectorizer.fit_transform(texts)
 
     def refresh(self) -> None:
-        self.fitvectorizer()
+        self.fit_vectorizer()
 
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         if not self.store.memories or self.tfidf_matrix is None:
             return []
         query_vec = self.vectorizer.transform([query])
-        sims = cosinesimilarity(queryvec, self.tfidf_matrix)[0]
-        rankedindices = sims.argsort()[::-1][:topk]
+        sims = cosine_similarity(query_vec, self.tfidf_matrix)[0]
+        ranked_indices = sims.argsort()[::-1][:top_k]
 
         results = []
         for idx in ranked_indices:
@@ -117,5 +115,5 @@ def demo():
             print("unknown command")
 
 
-if name == "main":
+if __name__ == "__main__":
     demo()
